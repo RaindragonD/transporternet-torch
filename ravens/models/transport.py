@@ -25,7 +25,7 @@ import PIL
 class Transport(nn.Module):
     """Transport module."""
 
-    def __init__(self, in_shape, n_rotations, crop_size, preprocess):
+    def __init__(self, in_shape, n_rotations, crop_size, preprocess, device):
         """Transport module for placing.
 
         Args:
@@ -39,6 +39,7 @@ class Transport(nn.Module):
         self.n_rotations = n_rotations
         self.crop_size = crop_size    # crop size must be N*16 (e.g. 96)
         self.preprocess = preprocess
+        self.device = device
 
         self.pad_size = int(self.crop_size / 2)
         self.padding = np.zeros((3, 2), dtype=int)
@@ -57,8 +58,8 @@ class Transport(nn.Module):
             self.kernel_dim = 3
 
         # 2 fully convolutional ResNets with 57 layers and 16-stride
-        self.querynet = ResNet43_8s(in_shape[2], self.kernel_dim)
-        self.keynet = ResNet43_8s(in_shape[2], self.output_dim)
+        self.querynet = ResNet43_8s(in_shape[2], self.kernel_dim).to(device)
+        self.keynet = ResNet43_8s(in_shape[2], self.output_dim).to(device)
         self.optim = optim.Adam(list(self.querynet.parameters())+list(self.keynet.parameters()), lr=1e-4)
         self.criterion = nn.CrossEntropyLoss()
         # self.metric = tf.keras.metrics.Mean(name='loss_transport')
@@ -83,7 +84,7 @@ class Transport(nn.Module):
         input_data = self.preprocess(img_unprocessed.copy())
         in_shape = (1,) + input_data.shape
         input_data = input_data.reshape(in_shape)
-        in_tensor = torch.tensor(input_data, dtype=torch.float32)
+        in_tensor = torch.tensor(input_data, dtype=torch.float32).to(self.device)
         in_tensor = in_tensor.permute(0,3,1,2)
 
         logits = self.keynet(in_tensor) # (1, self.output_dim, H, W)
@@ -120,7 +121,6 @@ class Transport(nn.Module):
         """
 
         # self.metric.reset_states()
-
         output = self.forward(in_img, p, softmax=False, train=True)
         output = output.reshape(1, np.prod(output.shape))
 
@@ -134,7 +134,7 @@ class Transport(nn.Module):
         # Get loss.
         label = label.reshape(np.prod(label.shape),)
         label = np.where(label==1)[0][0]
-        label = torch.tensor(label, dtype=torch.int64).reshape(1,)
+        label = torch.tensor(label, dtype=torch.int64).reshape(1,).to(self.device)
         loss = self.criterion(output, label)
 
         if backprop:

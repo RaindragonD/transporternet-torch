@@ -30,9 +30,10 @@ from ravens.models import TransportPerPixelLoss
 class TransporterAgent:
     """Agent that uses Transporter Networks."""
 
-    def __init__(self, name, task, n_rotations=36):
+    def __init__(self, name, task, device, n_rotations=36):
         self.name = name
         self.task = task
+        self.device = device
         self.total_steps = 0
         self.crop_size = 64
         self.n_rotations = n_rotations
@@ -93,7 +94,6 @@ class TransporterAgent:
         # Data augmentation.
         if augment:
             img, _, (p0, p1), _ = utils.perturb(img, [p0, p1])
-
         return img, p0, p0_theta, p1, p1_theta
 
     def train(self, dataset, writer=None):
@@ -238,24 +238,26 @@ class TransporterAgent:
 
 class OriginalTransporterAgent(TransporterAgent):
 
-    def __init__(self, name, task, n_rotations=36):
-        super().__init__(name, task, n_rotations)
+    def __init__(self, name, task, device, n_rotations=36):
+        super().__init__(name, task, device, n_rotations)
 
         self.attention = Attention(
                 in_shape=self.in_shape,
                 n_rotations=1,
-                preprocess=utils.preprocess)
+                preprocess=utils.preprocess,
+                device=device).to(device)
         self.transport = Transport(
                 in_shape=self.in_shape,
                 n_rotations=self.n_rotations,
                 crop_size=self.crop_size,
-                preprocess=utils.preprocess)
+                preprocess=utils.preprocess,
+                device=device).to(device)
 
 
 class NoTransportTransporterAgent(TransporterAgent):
 
-    def __init__(self, name, task, n_rotations=36):
-        super().__init__(name, task, n_rotations)
+    def __init__(self, name, task, device, n_rotations=36):
+        super().__init__(name, task, device, n_rotations)
 
         self.attention = Attention(
                 in_shape=self.in_shape,
@@ -269,8 +271,8 @@ class NoTransportTransporterAgent(TransporterAgent):
 
 class PerPixelLossTransporterAgent(TransporterAgent):
 
-    def __init__(self, name, task, n_rotations=36):
-        super().__init__(name, task, n_rotations)
+    def __init__(self, name, task, device, n_rotations=36):
+        super().__init__(name, task, device, n_rotations)
 
         self.attention = Attention(
                 in_shape=self.in_shape,
@@ -286,8 +288,8 @@ class PerPixelLossTransporterAgent(TransporterAgent):
 class GoalTransporterAgent(TransporterAgent):
     """Goal-Conditioned Transporters supporting a separate goal FCN."""
 
-    def __init__(self, name, task, n_rotations=36):
-        super().__init__(name, task, n_rotations)
+    def __init__(self, name, task, device, n_rotations=36):
+        super().__init__(name, task, device, n_rotations)
 
         self.attention = Attention(
                 in_shape=self.in_shape,
@@ -303,8 +305,8 @@ class GoalTransporterAgent(TransporterAgent):
 class GoalNaiveTransporterAgent(TransporterAgent):
     """Naive version which stacks current and goal images through normal Transport."""
 
-    def __init__(self, name, task, n_rotations=36):
-        super().__init__(name, task, n_rotations)
+    def __init__(self, name, task, device, n_rotations=36):
+        super().__init__(name, task, device, n_rotations)
 
         # Stack the goal image for the vanilla Transport module.
         t_shape = (self.in_shape[0], self.in_shape[1],

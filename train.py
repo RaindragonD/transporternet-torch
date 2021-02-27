@@ -30,7 +30,7 @@ def main():
 
     # Parse command line arguments.
     parser = argparse.ArgumentParser()
-    parser.add_argument('--task', default='insertion')
+    parser.add_argument('--task', default='block-insertion')
     parser.add_argument('--agent', default='transporter')
     parser.add_argument('--n_demos', default=100, type=int)
     parser.add_argument('--n_steps', default=40000, type=int)

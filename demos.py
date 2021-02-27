@@ -31,7 +31,7 @@ def main():
   # Parse command line arguments.
   parser = argparse.ArgumentParser()
   parser.add_argument('--disp', action='store_true')
-  parser.add_argument('--task', default='insertion')
+  parser.add_argument('--task', default='block-insertion')
   parser.add_argument('--mode', default='train')
   parser.add_argument('--n', default=1000, type=int)
   args = parser.parse_args()

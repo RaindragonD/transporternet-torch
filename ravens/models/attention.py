@@ -26,10 +26,11 @@ import PIL
 class Attention(nn.Module):
     """Attention module."""
 
-    def __init__(self, in_shape, n_rotations, preprocess, lite=False):
+    def __init__(self, in_shape, n_rotations, preprocess, device, lite=False):
         super().__init__()
         self.n_rotations = n_rotations
         self.preprocess = preprocess
+        self.device = device
 
         max_dim = np.max(in_shape[:2])
 
@@ -39,7 +40,7 @@ class Attention(nn.Module):
 
         # Initialize fully convolutional Residual Network with 43 layers and
         # 8-stride (3 2x2 max pools and 3 2x bilinear upsampling)
-        self.model = ResNet43_8s(in_shape[2], 1)
+        self.model = ResNet43_8s(in_shape[2], 1).to(device)
         self.optim = optim.Adam(self.model.parameters(), lr=1e-4)
         self.criterion = nn.CrossEntropyLoss()
         # self.metric = tf.keras.metrics.Mean(name='loss_attention')
@@ -51,7 +52,7 @@ class Attention(nn.Module):
         in_data = self.preprocess(in_data)
         in_shape = (1,) + in_data.shape
         in_data = in_data.reshape(in_shape)
-        in_tens = torch.tensor(in_data, dtype=torch.float32)
+        in_tens = torch.tensor(in_data, dtype=torch.float32).to(self.device)
         in_tens = in_tens.permute(0,3,1,2)
 
         # Rotate angles.
@@ -92,7 +93,7 @@ class Attention(nn.Module):
         label[p[0], p[1], theta_i] = 1
         label = label.reshape(np.prod(label.shape),)
         label = np.where(label==1)[0][0]
-        label = torch.tensor(label, dtype=torch.int64).reshape(1,)
+        label = torch.tensor(label, dtype=torch.int64).reshape(1,).to(self.device)
         # Get loss.
         loss = self.criterion(output, label)
 

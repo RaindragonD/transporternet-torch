@@ -143,13 +143,11 @@ class Environment():
     info.update(self.info)
 
     # Get RGB-D camera image observations.
-   
-    colors, depths = [], []
+    obs = {'color': [], 'depth': []}
     for config in self.agent_cams:
       color, depth, _ = self.render(config)
-      colors.append(color)
-      depths.append(depth)
-    obs = {'color': np.array(colors), 'depth': np.array(depths)}
+      obs['color'].append(color)
+      obs['depth'].append(depth)
 
     return obs, reward, done, info
 
